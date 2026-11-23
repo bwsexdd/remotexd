@@ -11,16 +11,16 @@ app.get('/', (req, res) => {
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Stream Viewer</title>
+    <title>Remote Control</title>
     <style>
-        body { margin: 0; background: #0e0e10; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: #fff; font-family: sans-serif; }
-        #status { margin-bottom: 8px; font-size: 14px; opacity: 0.8; }
-        canvas { max-width: 95vw; max-height: 90vh; border: 1px solid #333; background: #000; }
+        body { margin: 0; background: #0e0e10; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: #fff; font-family: sans-serif; overflow: hidden; }
+        #status { margin-bottom: 6px; font-size: 13px; opacity: 0.8; }
+        canvas { max-width: 95vw; max-height: 90vh; border: 1px solid #444; background: #000; cursor: crosshair; }
     </style>
 </head>
-<body>
+<body tabindex="0">
     <div id="status">Baglaniyor...</div>
-    <canvas id="view"></canvas>
+    <canvas id="view" tabindex="1"></canvas>
     <script>
         const canvas = document.getElementById('view');
         const ctx = canvas.getContext('2d');
@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
 
         ws.binaryType = 'blob';
 
-        ws.onopen = () => { status.innerText = 'Baglandi (Yayin Bekleniyor)'; };
+        ws.onopen = () => { status.innerText = 'Baglandi · Kontrol Aktif'; };
         ws.onclose = () => { status.innerText = 'Baglanti Kesildi'; };
 
         ws.onmessage = async (e) => {
@@ -45,6 +45,47 @@ app.get('/', (req, res) => {
                 img.src = URL.createObjectURL(e.data);
             }
         };
+
+        function sendInput(msg) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(msg);
+            }
+        }
+
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+        }
+
+        let moveTimeout = null;
+        canvas.addEventListener('mousemove', (e) => {
+            if (moveTimeout) return;
+            moveTimeout = setTimeout(() => { moveTimeout = null; }, 30);
+            const { x, y } = getCoords(e);
+            sendInput('M:' + x.toFixed(4) + ':' + y.toFixed(4));
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const btn = e.button === 2 ? 2 : 1;
+            sendInput('D:' + btn);
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            const btn = e.button === 2 ? 2 : 1;
+            sendInput('U:' + btn);
+        });
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        window.addEventListener('keydown', (e) => {
+            sendInput('KD:' + e.keyCode);
+        });
+
+        window.addEventListener('keyup', (e) => {
+            sendInput('KU:' + e.keyCode);
+        });
     </script>
 </body>
 </html>`);
