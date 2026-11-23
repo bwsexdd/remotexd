@@ -11,27 +11,28 @@ app.get('/', (req, res) => {
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Remote Control</title>
+    <title>Stream Control</title>
     <style>
-        body { margin: 0; background: #0e0e10; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: #fff; font-family: sans-serif; overflow: hidden; }
-        #status { margin-bottom: 6px; font-size: 13px; opacity: 0.8; }
-        canvas { max-width: 95vw; max-height: 90vh; border: 1px solid #444; background: #000; cursor: crosshair; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #0b0c10; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: #66fcf1; font-family: monospace; overflow: hidden; user-select: none; }
+        #bar { position: fixed; top: 8px; font-size: 12px; background: rgba(0,0,0,0.6); padding: 4px 12px; border-radius: 4px; border: 1px solid #1f2833; z-index: 10; }
+        canvas { max-width: 100vw; max-height: 100vh; cursor: crosshair; object-fit: contain; }
     </style>
 </head>
 <body tabindex="0">
-    <div id="status">Baglaniyor...</div>
+    <div id="bar">BAGLANIYOR...</div>
     <canvas id="view" tabindex="1"></canvas>
     <script>
         const canvas = document.getElementById('view');
         const ctx = canvas.getContext('2d');
-        const status = document.getElementById('status');
+        const bar = document.getElementById('bar');
         const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
         const ws = new WebSocket(wsProto + location.host);
 
         ws.binaryType = 'blob';
 
-        ws.onopen = () => { status.innerText = 'Baglandi · Kontrol Aktif'; };
-        ws.onclose = () => { status.innerText = 'Baglanti Kesildi'; };
+        ws.onopen = () => { bar.innerText = 'ONLINE · 720P · AKTIF'; bar.style.color = '#45f3ff'; };
+        ws.onclose = () => { bar.innerText = 'BAGLANTI KESILDI'; bar.style.color = '#ff4d4d'; };
 
         ws.onmessage = async (e) => {
             if (e.data instanceof Blob) {
@@ -46,45 +47,48 @@ app.get('/', (req, res) => {
             }
         };
 
-        function sendInput(msg) {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(msg);
-            }
+        function send(cmd) {
+            if (ws.readyState === WebSocket.OPEN) ws.send(cmd);
         }
 
-        function getCoords(e) {
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / rect.width;
-            const y = (e.clientY - rect.top) / rect.height;
-            return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+        function pos(e) {
+            const r = canvas.getBoundingClientRect();
+            return {
+                x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)),
+                y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))
+            };
         }
 
-        let moveTimeout = null;
+        let throttle = false;
         canvas.addEventListener('mousemove', (e) => {
-            if (moveTimeout) return;
-            moveTimeout = setTimeout(() => { moveTimeout = null; }, 30);
-            const { x, y } = getCoords(e);
-            sendInput('M:' + x.toFixed(4) + ':' + y.toFixed(4));
+            if (throttle) return;
+            throttle = true;
+            setTimeout(() => { throttle = false; }, 25);
+            const p = pos(e);
+            send('M:' + p.x.toFixed(4) + ':' + p.y.toFixed(4));
         });
 
         canvas.addEventListener('mousedown', (e) => {
-            const btn = e.button === 2 ? 2 : 1;
-            sendInput('D:' + btn);
+            send('D:' + e.button);
         });
 
         canvas.addEventListener('mouseup', (e) => {
-            const btn = e.button === 2 ? 2 : 1;
-            sendInput('U:' + btn);
+            send('U:' + e.button);
         });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            send('W:' + (e.deltaY > 0 ? 1 : -1));
+        }, { passive: false });
 
         canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
         window.addEventListener('keydown', (e) => {
-            sendInput('KD:' + e.keyCode);
+            send('KD:' + e.keyCode);
         });
 
         window.addEventListener('keyup', (e) => {
-            sendInput('KU:' + e.keyCode);
+            send('KU:' + e.keyCode);
         });
     </script>
 </body>
@@ -102,4 +106,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log('Listening on ' + PORT));
+server.listen(PORT, () => console.log('Relay running on ' + PORT));
