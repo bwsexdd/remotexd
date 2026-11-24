@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Console</title>
+    <title>Zero-Lag Remote</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: -apple-system, monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; }
@@ -35,7 +35,15 @@ app.get('/', (req, res) => {
         button:hover { background: rgba(255, 255, 255, 0.25); }
         input { cursor: text; }
 
-        canvas { max-width: 100vw; max-height: 100vh; object-fit: contain; cursor: crosshair; }
+        #stage { position: relative; max-width: 100vw; max-height: 100vh; display: inline-block; cursor: none; }
+        canvas { max-width: 100vw; max-height: 100vh; object-fit: contain; display: block; }
+        
+        #cursorDot {
+            position: absolute; width: 14px; height: 14px;
+            border: 2px solid #00ff88; border-radius: 50%;
+            background: rgba(0, 255, 136, 0.3); pointer-events: none;
+            transform: translate(-50%, -50%); transition: transform 0.04s ease-out; z-index: 50; display: none;
+        }
 
         #chatBox {
             position: fixed; bottom: 20px; right: 20px; width: 330px; height: 440px;
@@ -66,9 +74,9 @@ app.get('/', (req, res) => {
         <span id="statFps" style="color: #00ff88; font-weight: bold;">0 FPS</span>
         <div class="sep"></div>
         <select id="qualitySel" onchange="sendQuality()">
-            <option value="720" selected>Balanced (Sifir Gecikme)</option>
+            <option value="720" selected>Smooth 720p (Ultra Fast)</option>
             <option value="1080">1080p HQ</option>
-            <option value="540">Fast Low-Bandwidth</option>
+            <option value="540">540p Low Bandwidth</option>
         </select>
         <button onclick="sendCmd('WIN')">Win</button>
         <button onclick="sendCmd('TAB')">Alt+Tab</button>
@@ -77,7 +85,10 @@ app.get('/', (req, res) => {
         <button onclick="toggleFs()">⛶</button>
     </div>
 
-    <canvas id="view" tabindex="1"></canvas>
+    <div id="stage">
+        <canvas id="view" tabindex="1"></canvas>
+        <div id="cursorDot"></div>
+    </div>
 
     <div id="chatBox">
         <div id="chatHeader">
@@ -97,6 +108,7 @@ app.get('/', (req, res) => {
         const dot = document.getElementById('statusDot');
         const txt = document.getElementById('statusTxt');
         const fpsTxt = document.getElementById('statFps');
+        const cursorDot = document.getElementById('cursorDot');
         const chatBox = document.getElementById('chatBox');
         const chatMsgs = document.getElementById('chatMsgs');
         const chatInp = document.getElementById('chatInp');
@@ -190,9 +202,16 @@ app.get('/', (req, res) => {
         let isDown = false;
         let moveTimer = null;
 
+        canvas.addEventListener('mouseenter', () => { cursorDot.style.display = 'block'; });
+        canvas.addEventListener('mouseleave', () => { cursorDot.style.display = 'none'; });
+
         canvas.addEventListener('mousemove', (e) => {
+            const r = canvas.getBoundingClientRect();
+            cursorDot.style.left = (e.clientX - r.left) + 'px';
+            cursorDot.style.top = (e.clientY - r.top) + 'px';
+
             if (moveTimer) return;
-            moveTimer = setTimeout(() => { moveTimer = null; }, 35);
+            moveTimer = setTimeout(() => { moveTimer = null; }, 30);
             const p = pos(e);
             if (isDown) {
                 send('D:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
@@ -245,4 +264,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log('Zero-Lag Stream on ' + PORT));
+server.listen(PORT, () => console.log('Ultra-Smooth Stream on ' + PORT));
