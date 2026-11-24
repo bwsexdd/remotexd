@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instant Remote</title>
+    <title>Remote Support Console</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: -apple-system, monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; }
@@ -33,9 +33,31 @@ app.get('/', (req, res) => {
             color: #fff; padding: 3px 8px; border-radius: 10px; font-size: 11px; outline: none; cursor: pointer;
         }
         button:hover { background: rgba(255, 255, 255, 0.25); }
-        input { cursor: text; width: 120px; }
+        input { cursor: text; }
 
         canvas { max-width: 100vw; max-height: 100vh; object-fit: contain; cursor: crosshair; }
+
+        #chatBox {
+            position: fixed; bottom: 20px; right: 20px; width: 320px; height: 420px;
+            background: rgba(15, 20, 30, 0.95); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
+            display: none; flex-direction: column; z-index: 200; box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+        }
+        #chatHeader {
+            padding: 10px 14px; background: #1877f2; border-radius: 11px 11px 0 0;
+            display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold;
+        }
+        #chatMsgs {
+            flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 12px;
+        }
+        .msg { padding: 6px 10px; border-radius: 8px; max-width: 85%; word-break: break-word; }
+        .msg-me { background: #1877f2; align-self: flex-end; }
+        .msg-them { background: rgba(255, 255, 255, 0.1); align-self: flex-start; border: 1px solid rgba(255,255,255,0.08); }
+        #chatInputArea {
+            padding: 8px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 6px;
+        }
+        #chatInputArea input { flex: 1; padding: 6px 10px; border-radius: 6px; }
+        #chatInputArea button { padding: 6px 12px; background: #1877f2; border: none; }
     </style>
 </head>
 <body tabindex="0">
@@ -51,12 +73,24 @@ app.get('/', (req, res) => {
         </select>
         <button onclick="sendCmd('WIN')">Win</button>
         <button onclick="sendCmd('TAB')">Alt+Tab</button>
-        <input id="pasteInp" type="text" placeholder="Yapistir..." onkeydown="if(event.key==='Enter') sendPaste()">
-        <button onclick="sendPaste()">Gonder</button>
+        <button onclick="toggleChat()" style="background: #1877f2; font-weight: bold;">💬 Destek Chat</button>
+        <button onclick="sendCmd('OPEN_CHAT')">Pencereyi Ac</button>
         <button onclick="toggleFs()">⛶</button>
     </div>
 
     <canvas id="view" tabindex="1"></canvas>
+
+    <div id="chatBox">
+        <div id="chatHeader">
+            <span>Canli Destek Hatti (Hedef PC)</span>
+            <span style="cursor:pointer;" onclick="toggleChat()">✕</span>
+        </div>
+        <div id="chatMsgs"></div>
+        <div id="chatInputArea">
+            <input id="chatInp" type="text" placeholder="Mesaj yaz..." onkeydown="if(event.key==='Enter') sendChat()">
+            <button onclick="sendChat()">Gonder</button>
+        </div>
+    </div>
 
     <script>
         const canvas = document.getElementById('view');
@@ -64,6 +98,9 @@ app.get('/', (req, res) => {
         const dot = document.getElementById('statusDot');
         const txt = document.getElementById('statusTxt');
         const fpsTxt = document.getElementById('statFps');
+        const chatBox = document.getElementById('chatBox');
+        const chatMsgs = document.getElementById('chatMsgs');
+        const chatInp = document.getElementById('chatInp');
         
         const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
         const ws = new WebSocket(wsProto + location.host);
@@ -92,6 +129,14 @@ app.get('/', (req, res) => {
 
         let isDrawing = false;
         ws.onmessage = async (e) => {
+            if (typeof e.data === 'string') {
+                if (e.data.startsWith('CHAT:')) {
+                    appendMsg(e.data.substring(5), 'them');
+                    chatBox.style.display = 'flex';
+                }
+                return;
+            }
+
             if (isDrawing || !(e.data instanceof Blob)) return;
             isDrawing = true;
             try {
@@ -108,13 +153,31 @@ app.get('/', (req, res) => {
         function send(cmd) { if (ws.readyState === WebSocket.OPEN) ws.send(cmd); }
         function sendCmd(name) { send(name); }
         function sendQuality() { send('Q:' + document.getElementById('qualitySel').value); }
-        function sendPaste() {
-            const inp = document.getElementById('pasteInp');
-            if (inp.value) { send('T:' + inp.value); inp.value = ''; }
-        }
         function toggleFs() {
             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
             else document.exitFullscreen();
+        }
+
+        function toggleChat() {
+            chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
+            if (chatBox.style.display === 'flex') chatInp.focus();
+        }
+
+        function appendMsg(text, who) {
+            const el = document.createElement('div');
+            el.className = 'msg ' + (who === 'me' ? 'msg-me' : 'msg-them');
+            el.innerText = (who === 'me' ? 'Sen: ' : 'Musteri: ') + text;
+            chatMsgs.appendChild(el);
+            chatMsgs.scrollTop = chatMsgs.scrollHeight;
+        }
+
+        function sendChat() {
+            const val = chatInp.value.trim();
+            if (val) {
+                send('MSG:' + val);
+                appendMsg(val, 'me');
+                chatInp.value = '';
+            }
         }
 
         function pos(e) {
@@ -140,12 +203,14 @@ app.get('/', (req, res) => {
         });
 
         canvas.addEventListener('mousedown', (e) => {
+            if (e.target.closest('#chatBox') || e.target.closest('#nav')) return;
             isDown = true;
             const p = pos(e);
             send('C:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
         });
 
         canvas.addEventListener('mouseup', (e) => {
+            if (e.target.closest('#chatBox') || e.target.closest('#nav')) return;
             isDown = false;
             const p = pos(e);
             send('U:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
@@ -181,4 +246,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log('Relay running on ' + PORT));
+server.listen(PORT, () => console.log('Support Remote on ' + PORT));
