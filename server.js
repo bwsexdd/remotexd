@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remote Support Console</title>
+    <title>Console</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: -apple-system, monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; }
@@ -38,26 +38,25 @@ app.get('/', (req, res) => {
         canvas { max-width: 100vw; max-height: 100vh; object-fit: contain; cursor: crosshair; }
 
         #chatBox {
-            position: fixed; bottom: 20px; right: 20px; width: 320px; height: 420px;
-            background: rgba(15, 20, 30, 0.95); backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
-            display: none; flex-direction: column; z-index: 200; box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+            position: fixed; bottom: 20px; right: 20px; width: 330px; height: 440px;
+            background: #0c1017; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px;
+            display: none; flex-direction: column; z-index: 200; box-shadow: 0 16px 40px rgba(0,0,0,0.7); overflow: hidden;
         }
         #chatHeader {
-            padding: 10px 14px; background: #1877f2; border-radius: 11px 11px 0 0;
-            display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold;
+            padding: 10px 14px; background: #1877f2;
+            display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold;
         }
         #chatMsgs {
-            flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 12px;
+            flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 12px;
         }
-        .msg { padding: 6px 10px; border-radius: 8px; max-width: 85%; word-break: break-word; }
-        .msg-me { background: #1877f2; align-self: flex-end; }
-        .msg-them { background: rgba(255, 255, 255, 0.1); align-self: flex-start; border: 1px solid rgba(255,255,255,0.08); }
+        .msg { padding: 6px 12px; border-radius: 14px; max-width: 82%; word-break: break-word; font-size: 12px; }
+        .msg-me { background: #1877f2; align-self: flex-end; color: #fff; }
+        .msg-them { background: #1c2333; align-self: flex-start; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.08); }
         #chatInputArea {
-            padding: 8px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 6px;
+            padding: 10px; background: #0f141e; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px;
         }
-        #chatInputArea input { flex: 1; padding: 6px 10px; border-radius: 6px; }
-        #chatInputArea button { padding: 6px 12px; background: #1877f2; border: none; }
+        #chatInputArea input { flex: 1; padding: 8px 12px; border-radius: 6px; background: #1c2333; border: 1px solid rgba(255,255,255,0.12); color: #fff; font-size: 12px; }
+        #chatInputArea button { padding: 8px 16px; background: #1877f2; border: none; border-radius: 6px; font-weight: bold; font-size: 12px; }
     </style>
 </head>
 <body tabindex="0">
@@ -73,7 +72,7 @@ app.get('/', (req, res) => {
         </select>
         <button onclick="sendCmd('WIN')">Win</button>
         <button onclick="sendCmd('TAB')">Alt+Tab</button>
-        <button onclick="toggleChat()" style="background: #1877f2; font-weight: bold;">💬 Destek Chat</button>
+        <button onclick="toggleChat()" style="background: #1877f2; font-weight: bold;">💬 Live Support</button>
         <button onclick="sendCmd('OPEN_CHAT')">Pencereyi Ac</button>
         <button onclick="toggleFs()">⛶</button>
     </div>
@@ -82,8 +81,8 @@ app.get('/', (req, res) => {
 
     <div id="chatBox">
         <div id="chatHeader">
-            <span>Canli Destek Hatti (Hedef PC)</span>
-            <span style="cursor:pointer;" onclick="toggleChat()">✕</span>
+            <span>Live Support (MUSTERI)</span>
+            <span style="cursor:pointer; font-size: 14px;" onclick="toggleChat()">✕</span>
         </div>
         <div id="chatMsgs"></div>
         <div id="chatInputArea">
@@ -210,40 +209,4 @@ app.get('/', (req, res) => {
         });
 
         canvas.addEventListener('mouseup', (e) => {
-            if (e.target.closest('#chatBox') || e.target.closest('#nav')) return;
-            isDown = false;
-            const p = pos(e);
-            send('U:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
-        });
-
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            send('W:' + (e.deltaY > 0 ? 1 : -1));
-        }, { passive: false });
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        window.addEventListener('keydown', (e) => {
-            if (document.activeElement.tagName === 'INPUT') return;
-            send('KD:' + e.keyCode);
-        });
-        window.addEventListener('keyup', (e) => {
-            if (document.activeElement.tagName === 'INPUT') return;
-            send('KU:' + e.keyCode);
-        });
-    </script>
-</body>
-</html>`);
-});
-
-wss.on('connection', (ws) => {
-    ws.on('message', (msg, isBinary) => {
-        wss.clients.forEach(client => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-                client.send(msg, { binary: isBinary });
-            }
-        });
-    });
-});
-
-const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log('Support Remote on ' + PORT));
+            if (e.target.closest('#chatBox') || e
