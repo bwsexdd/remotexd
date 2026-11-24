@@ -165,7 +165,7 @@ app.get('/', (req, res) => {
         function appendMsg(text, who) {
             const el = document.createElement('div');
             el.className = 'msg ' + (who === 'me' ? 'msg-me' : 'msg-them');
-            el.innerText = (who === 'me' ? 'Sen: ' : 'Musteri: ') + text;
+            el.innerText = (who === 'me' ? 'Sen: ' : 'VICTIM: ') + text;
             chatMsgs.appendChild(el);
             chatMsgs.scrollTop = chatMsgs.scrollHeight;
         }
