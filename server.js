@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zero-Lag Remote</title>
+    <title>Instant Remote Console</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: -apple-system, monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; }
@@ -234,6 +234,12 @@ app.get('/', (req, res) => {
             send('U:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
         });
 
+        canvas.addEventListener('dblclick', (e) => {
+            if (e.target.closest('#chatBox') || e.target.closest('#nav')) return;
+            const p = pos(e);
+            send('DC:' + p.x.toFixed(4) + ':' + p.y.toFixed(4) + ':' + e.button);
+        });
+
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             send('W:' + (e.deltaY > 0 ? 1 : -1));
@@ -264,4 +270,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log('Ultra-Smooth Stream on ' + PORT));
+server.listen(PORT, () => console.log('Instant Remote on ' + PORT));
